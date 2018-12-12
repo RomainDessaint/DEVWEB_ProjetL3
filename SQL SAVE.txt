@@ -1,0 +1,44 @@
+CREATE TABLE `users` (
+`user_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+`user_name` varchar(30) NOT NULL,
+`user_forename` varchar(30) NOT NULL,
+`user_login` varchar(20) NOT NULL,
+`user_pass` varchar(20) NOT NULL,
+`user_role` varchar(10) NOT NULL,
+`user_validated` bool NOT NULL,
+`user_school_id` int(10) unsigned,
+PRIMARY KEY (`user_id`)
+KEY `user_school_id`(`user_school_id`),
+CONSTRAINT `users_ibfk_1` FOREIGN KEY (`user_school_id`) REFERENCES `schools`(`school_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1
+
+CREATE TABLE `schools` (
+`school_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+`school_name` varchar(30) NOT NULL,
+`school_nb_students` int(11) NOT NULL,
+`school_nb_organization` int(11) NOT NULL,
+`school_adress` varchar(100) NOT NULL,
+PRIMARY KEY (`school_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1
+
+CREATE TABLE `organizations` (
+`organization_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+`organization_name` varchar(50) NOT NULL,
+`organization_nb_members` int(11) NOT NULL,
+`organization_school_id` int(10) unsigned NOT NULL,
+`organization_validated` bool NOT NULL,
+PRIMARY KEY (`organization_id`),
+KEY `organization_school_id`(`organization_school_id`),
+CONSTRAINT `organizations_ibfk_1` FOREIGN KEY (`organization_school_id`) REFERENCES `schools`(`school_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1
+
+CREATE TABLE members(
+`member_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+`member_forename` VARCHAR(50) NOT NULL,
+`member_name` VARCHAR(50) NOT NULL,
+`member_role` VARCHAR(50) NOT NULL,
+`member_organization_id` INTEGER UNSIGNED NOT NULL,
+PRIMARY KEY (`member_id`),
+KEY `member_organization_id`(`member_organization_id`),
+CONSTRAINT `members_ibkf_1` FOREIGN KEY (`member_organization_id`) REFERENCES `organizations`(`organization_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1
