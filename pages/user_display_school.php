@@ -19,7 +19,7 @@ $school_name = getSchoolName();
 	</header>
 
 	<section>
-		<h1> Informations école </h1>
+		<h1> Utilisateur - <?php echo $school_name ?> </h1>
 		<?php
 		if(accountIsConnected()) {
 			if(userIsConnected()) {
@@ -33,7 +33,7 @@ $school_name = getSchoolName();
 			echo logButton();
 		}
 		echo displayBackButton();
-		echo backButton('user_logged.php');
+		echo backButton('user_search_school.php');
 		?>
 	</section>
 </body>

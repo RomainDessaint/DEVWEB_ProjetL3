@@ -7,7 +7,7 @@ session_start();
 <html lang = "fr">
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-	<title> Utilisateur - Chercher une école </title>
+	<title> Utilisateur - Membre </title>
 </head>
 
 <body>
@@ -18,12 +18,12 @@ session_start();
 	</header>
 
 	<section>
-		<h1> Utilisateur - Chercher une école </h1>
+		<h1> Utilisateur - Membre </h1>
 		<?php
 		if(accountIsConnected()) {
 			if(userIsConnected()) {
-				echo searchSchoolForm();
-				echo searchSchool();
+				echo memberChoiceForm();
+				echo memberChoice();
 			} else {
 				echo('Vous n\'êtes pas autorisé à accèder à cette page.');
 			}

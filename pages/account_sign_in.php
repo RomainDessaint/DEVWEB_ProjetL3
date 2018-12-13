@@ -7,7 +7,7 @@ session_start();
 <html lang = "fr">
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-	<title> Inscription </title>
+	<title> S'inscire </title>
 </head>
 
 <body>
@@ -24,7 +24,7 @@ session_start();
 			echo signIn();
 		}
 		echo displayBackButton();
-		echo backButton('account_sign_in_choice.php');
+		echo backButton('account_log_in.php');
 		?>
 	</section>
 </body>

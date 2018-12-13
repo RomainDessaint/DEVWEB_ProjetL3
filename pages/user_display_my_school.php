@@ -18,11 +18,14 @@ session_start();
 	</header>
 
 	<section>
-		<h1> Mon école </h1>
+		<h1> Utilisateur - Mon école </h1>
 		<?php
 		if(accountIsConnected()) {
 			if(userIsConnected()) {
 				echo displayMySchool();
+				echo displayChangeSchoolButton();
+				echo changeSchoolForm();
+				echo changeSchool();
 			} else {
 				echo('Vous n\'êtes pas autorisé à accèder à cette page.');
 			}

@@ -7,7 +7,7 @@ session_start();
 <html lang = "fr">
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-	<title> Accueil utilisateur </title>
+	<title> Utilisateur - Accueil </title>
 </head>
 
 <body>
@@ -18,11 +18,10 @@ session_start();
 	</header>
 
 	<section>
-		<h1> Utilisateur </h1>
+		<h1> Utilisateur - Accueil </h1>
 		<?php
 		if(accountIsConnected()) {
 			if(userIsConnected()) {
-				echo('Bienvenue');
 				echo displayMenu();
 			} else {
 				echo('Vous n\'êtes pas autorisé à accèder à cette page.');
