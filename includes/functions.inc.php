@@ -948,129 +948,8 @@ function stringVerify($string) {
     return $verified;
 }
 
-<<<<<<< HEAD
 /*--------------------------------------------------------------------------------------------------------------*/
 /*--------------------------------------------------------------------------------------------------------------*/
-
-function registerManagerForm() {
-    $return = '<form action="#" method="POST">';
-    $return .= '<table>';
-    $return .= '<tr>';
-    $return .= '<td colspan=2> <h3> Enregistrer un manager : </h3>';
-    $return .= '</tr> <tr>';
-    $return .= '<td> Nom : </td> <td> <input type="text" name="manager_name"> </td>';
-    $return .= '</tr> <tr>';
-    $return .= '<td> Prénom : </td> <td> <input type="text" name="manager_forename"> </td>';
-    $return .= '</tr> <tr>';
-    $return .= '<td> Manager de quelle école ? </td> <td> <input type="text" id="school_id" onkeyup="autocomplet()" name="manager_school" autocomplete="off"> <ul id="school_list_id"> </ul> </td> </td>';
-    $return .= '</tr> <tr>';
-    $return .= '<td> Identifiant </td> <td> <input type="text" name="login"> </td>';
-    $return .= '</tr> <tr>';
-    $return .= '<td> Mot de passe </td> <td> <input type="password" name="pass1"> </td>';
-    $return .= '</tr> <tr>';
-    $return .= '<td> Mot de passe </td> <td> <input type="password" name="pass2"> </td>';
-    $return .= '</tr> <tr>';
-    $return .= '<td colspan=2 style="text-align:center"> <input type="submit" name="create_manager" value="S\'inscrire"> </td>';
-    $return .= '</tr>';
-    $return .= '</table>';
-    $return .= '</form>';
-    $return .= '<script type="text/javascript" src="../includes/js/jquery.min.js"></script>';
-    $return .= '<script type="text/javascript" src="../includes/js/autocomplete.js"></script>';
-
-    return $return;
-}
-
-function registerManager(){
-    if (isset($_POST['create_manager'])) {
-
-        $manager_name = $_POST['manager_name'];
-        $manager_forename = $_POST['manager_forename'];
-        $manager_log = $_POST['login'];
-        $manager_pass1 = $_POST['pass1'];
-        $manager_pass2 = $_POST['pass2'];
-        $manager_school = $_POST['manager_school'];
-
-        if($manager_name != "" AND $manager_log != "" AND $manager_pass1 != "" AND $manager_pass2 != "" AND $manager_school != "") {
-            if($manager_pass1 === $manager_pass2) {
-                $connection = db_connection();
-                $query = "SELECT school_id FROM schools WHERE school_name = '$manager_school'";
-                $result = $connection->query($query);
-                if($result->num_rows > 0){
-                    $row = $result->fetch_assoc();
-                    $school_id = $row['school_id'];
-                    $_SESSION['account_school_id'] = $school_id;
-                } else {
-                    return  "L'école recherchée n'existe pas.";
-                }
-                $query = "SELECT * FROM users WHERE user_name = '$manager_name' AND user_forename = '$manager_forename'";
-                $result = $connection->query($query);
-                if($result->num_rows > 0){
-                    return "Ce manager a déjà été inscrit";
-                } else {
-                    $query = "INSERT INTO users(user_name, user_forename, user_login, user_pass, user_role, user_school_id) VALUES('$manager_name', '$manager_forename', '$manager_log', '$manager_pass1', 2, '$school_id')";
-                    $result = $connection->query($query);
-                    if($result === TRUE) {
-                        $return = "Inscription de $manager_forename $manager_name réussie";
-                    } else {
-                        $return = "Problème survenu lors de la création du manager";
-                    }
-                }
-            } else {
-                $return = 'Les mots de passe ne correspondent pas.';
-            }
-        } else {
-            $return = 'Veuillez remplir les champs requis';
-        }
-        return $return;
-    }
-}
-
-function awaitingValidationOrganizations() {
-    if (managerIsConnected() || adminIsConnected()) {
-        $connection = db_connection();
-        $query = 'SELECT organization_name, school_name, user_name, user_forename, organization_id FROM organizations INNER JOIN schools ON organizations.organization_school_id = schools.school_id INNER JOIN members ON members.member_organization_id=organizations.organization_id INNER JOIN users ON users.user_id = members.member_user_id WHERE organization_validated = 0 AND school_id = '.$_SESSION['account_school_id'];
-        $result = $connection->query($query);
-        if($result->num_rows > 0){
-            $return = '<form action="#" method="POST">';
-            $return .= '<table>';
-            $return .= '<tr> <td colspan = 4> Associations à valider </td> </tr>';
-            $return .= '<tr> <th> Association </th> <th> Ecole </th> <th> Demande </th> <th> Valider </th> </tr> ';
-            while($row = $result->fetch_assoc()) {
-                $return .= '<tr>';
-                    $return .= '<td>' . $row['organization_name'] . '</td>';
-                    $return .= '<td>' . $row['school_name'] . '</td>';
-                    $return .= '<td> Demande par '.$row['user_name'].' '.$row['user_forename']. '</td>';
-                    $return .= '<td> <input type="submit" value="Valider la demande" name="organization'.$row['organization_id'].'"> </td>';
-                $return .= '</tr>';
-            }
-            $return .= '</table>';
-
-            return $return;
-        } else {
-            return "Il n'y a plus d'associations à valider";
-        }
-    } else {
-        return "Vous n'avez pas les droits pour effectuer des actions ici";
-    }
-}
-
-function validatingOrganizations() {
-    $connection = db_connection();
-    $query = 'SELECT organization_name, organization_id FROM organizations INNER JOIN schools ON organizations.organization_school_id = schools.school_id INNER JOIN members ON members.member_organization_id=organizations.organization_id INNER JOIN users ON users.user_id = members.member_user_id WHERE organization_validated = 0 AND school_id = '.$_SESSION['account_school_id'];
-    $result = $connection->query($query);
-    for ($i=0; $i < $result->num_rows; $i++) {
-        $row = $result->fetch_assoc();
-        if (isset($_POST['organization'.$row['organization_id']])) {
-            $query = 'UPDATE organizations SET organization_validated = 1 WHERE organization_id='.$row['organization_id'];
-            $result = $connection->query($query);
-            if ($result === TRUE) {
-                return "La demande pour l'association ".$row['organization_name'] ."a bien été acceptée";
-            } else {
-                return "Problème survenu lors de la validation";
-            }
-        }
-    }
-}
 
 function awaitingValidationMembers() {
     $connection = db_connection();
@@ -1117,6 +996,133 @@ function validatingMembers() {
         }
     }
 }
-=======
->>>>>>> 7a397582e384adcc3c651ac757527c83df4c92db
+
+function logList() {
+    $connection = db_connection();
+    $query = 'SELECT * FROM users INNER JOIN schools ON schools.school_id = users.user_school_id WHERE user_role = 1 OR user_role = 2';
+    $result = $connection->query($query);
+    if($result->num_rows > 0){
+        $return = '<form action="#" method="POST">';
+        $return .= '<table>';
+        $return .= '<tr> <td colspan = 6> Gérer les logs </td> </tr>';
+        $return .= '<tr> <th> Prénom </th> <th> Nom </th> <th> Ecole </th> <th> Login </th> <th> Role </th> <th> Supprimer </th> </tr> ';
+        while($row = $result->fetch_assoc()) {
+            $return .= '<tr>';
+                $return .= '<td>' . $row['user_forename'] . '</td>';
+                $return .= '<td>' . $row['user_name'] . '</td>';
+                $return .= '<td>' . $row['user_login'] .'</td>';
+                if ($row['user_role'] == 1) {
+                    $return .= '<td> Utilisateur </td>';
+                } elseif ($row['user_role'] == 2) {
+                    $return .= '<td> Manager </td>';
+                }
+                $return .= '<td>' . $row['school_name'] .'</td>';
+                $return .= '<td> <input type="submit" value="Supprimer" name="delete'.$row['user_id'].'"> </td>';
+            $return .= '</tr>';
+        }
+        $return .= '</table>';
+
+        return $return;
+    } else {
+        return "Il n'y a plus aucun compte utilisateur ou manager";
+    }
+}
+
+// function deleteLogin() {
+//     $connection = db_connection();
+//     $query = 'SELECT * FROM users INNER JOIN schools ON schools.school_id = users.user_school_id  WHERE user_role = 1 OR user_role = 2';
+//     $result = $connection->query($query);
+//     for ($i=0; $i < $result->num_rows; $i++) {
+//         while($row = $result->fetch_assoc()){
+//             if (isset($_POST['delete'.$row['user_id']])) {
+//                 $query = 'DELETE FROM users WHERE user_id='.$row['user_id'];
+//                 $result1 = $connection->query($query);
+//                 if ($result1 === TRUE) {
+//                     $query = 'UPDATE schools SET school_nb_students = school_nb_students-1 WHERE school_id='.$row['school_id'];
+//                     $result2 = $connection->query($query);
+//                     if ($result2 === TRUE) {
+//                         $query = 'SELECT * FROM members INNER JOIN organizations ON members.member_organization_id = organizations.organization_id WHERE member_user_id ='.$row['user_id'];
+//                         $result3 = $connection->query($query);
+//                         if ($result3->num_rows > 0) {
+//                             $row2 = $result2->fetch_assoc();
+//                             $query = 'UPDATE organizations SET organization_nb_member = organization_nb_member-1 WHERE organization_id='.$row2['organization_chool_id'];
+//                             $result4 = $connection->query($query);
+//                             if ($result4 === true) {
+//                                 header('Refresh: 0');
+//                                 exit();
+//                             } else {
+//                                 return "Problème survenu lors de la validation 3";
+//                             }
+//                         } else {
+//                             header('Refresh: 0');
+//                             exit();
+//                         }
+//                     } else {
+//                         return "Problème survenu lors de la validation 2";
+//                     }
+//                 } else {
+//                     return "Problème survenu lors de la validation 1";
+//                 }
+//             }
+//         }
+//     }
+// }
+
+function deleteLogin() {
+    $connection = db_connection();
+    $query = 'SELECT * FROM users INNER JOIN schools ON schools.school_id = users.user_school_id  WHERE user_role = 1 OR user_role = 2';
+    $result = $connection->query($query);
+    for ($i=0; $i < $result->num_rows; $i++) {
+        while($row = $result->fetch_assoc()){
+            if (isset($_POST['delete'.$row['user_id']])) {
+                $query = 'SELECT * FROM members INNER JOIN organizations ON members.member_organization_id = organizations.organization_id WHERE member_user_id ='.$row['user_id'];
+                $result1 = $connection->query($query);
+                if ($result1->num_rows > 0) {
+                    $row2 = $result1->fetch_assoc();
+                    $query = 'DELETE FROM members WHERE member_user_id='.$row['user_id'];
+                    $result2 = $connection->query($query);
+                    if ($result2 === TRUE) {
+                        $query = 'UPDATE organizations SET organization_nb_members = organization_nb_members-1 WHERE organization_id='.$row2['organization_school_id'];
+                        $result3 = $connection->query($query);
+                        if ($result3 === TRUE) {
+                            $query = 'DELETE FROM users WHERE user_id='.$row['user_id'];
+                            $result4 = $connection->query($query);
+                            if ($result4 === TRUE) {
+                                $query = 'UPDATE schools SET school_nb_students = school_nb_students-1 WHERE school_id='.$row['school_id'];
+                                $result5 = $connection->query($query);
+                                if ($result5 === TRUE) {
+                                    header('Refresh: 0');
+                                    exit();
+                                } else {
+                                    return "Problème survenu lors de la validation 5";
+                                }
+                            } else {
+                                return "Problème survenu lors de la validation 4";
+                            }
+                        } else {
+                            return "Problème survenu lors de la validation 3";
+                        }
+                    } else {
+                        return "Problème survenu lors de la validation 2";
+                    }
+                } else {
+                    $query = 'DELETE FROM users WHERE user_id='.$row['user_id'];
+                    $result4 = $connection->query($query);
+                    if ($result4 === TRUE) {
+                        $query = 'UPDATE schools SET school_nb_students = school_nb_students-1 WHERE school_id='.$row['school_id'];
+                        $result5 = $connection->query($query);
+                        if ($result5 === TRUE) {
+                            header('Refresh: 0');
+                            exit();
+                        } else {
+                            return "Problème survenu lors de la validation 7";
+                        }
+                    } else {
+                        return "Problème survenu lors de la validation 6";
+                    }
+                }
+            }
+        }
+    }
+}
 ?>
