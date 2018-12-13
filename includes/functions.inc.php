@@ -35,40 +35,7 @@ function notRegisteredForm() {
 //Fonction de redirection vers la page d'inscription
 function notRegistered() {
     if(isset($_POST['sign_in'])) {
-        header('location: account_sign_in_choice.php');
-    }
-}
-
-//fonction d'affichage du formulaire de choix de type de compte à créer lors d'une inscription
-function signInChoiceForm() {
-    $return = '<form action="#" method="POST">';
-    $return .= '<table>';
-    $return .= '<tr>';
-    $return .= '<td> S\'inscire en tant que : </td>';
-    $return .= '</tr> <tr>';
-    $return .= '<td> <input type="radio" name="account_choice" value="1"> Utilisateur </td>';
-    $return .= '</tr> <tr>';
-    $return .= '<td> <input type="radio" name="account_choice" value="2"> Manager VA </td>';
-    $return .= '</tr> <tr>';
-    $return .= '<td> <input type="submit" name="account_next" value="Suivant">';
-    $return .= '</tr>';
-    $return .= '</table>';
-    $return .= '</form>';
-    return $return;
-}
-
-//fonction de redirection en fonction du type de compte à créer lors d'une inscription
-function signInChoice() {
-    if(isset($_POST['account_next'])) {
-        if(isset($_POST['account_choice'])) {
-            $account_choice = $_POST['account_choice'];
-            if($account_choice == 1)
-            header('location: account_sign_in.php?account=1');
-            if($account_choice == 2)
-            header('location: account_sign_in.php?account=2');
-        } else {
-            return '<p style="color: red"> Veuillez séléctionner le type de compte à créer svp. </p>';
-        }
+        header('location: account_sign_in.php');
     }
 }
 
@@ -77,13 +44,7 @@ function signInForm() {
     $return = '<form action="#" method="POST">';
     $return .= '<table>';
     $return .= '<tr>';
-    $user_role = $_GET['account'];
-    if($user_role == 1)
     $return .= '<td colspan=2> <h3> Créer un compte utilisateur : </h3>';
-    else if($user_role == 2)
-    $return .= '<td colspan=2> <h3> Créer un compte manager VA : </h3>';
-    else if($user_role == 3)
-    $return .= '<td colspan=2> <h3> Créer un compte administrateur CLM : </h3>';
     $return .= '</tr> <tr>';
     $return .= '<td> Nom : </td> <td> <input type="text" name="user_name"> </td>';
     $return .= '</tr> <tr>';
@@ -95,27 +56,18 @@ function signInForm() {
     $return .= '</tr> <tr>';
     $return .= '<td> Mot de passe </td> <td> <input type="password" name="user_pass2"> </td>';
     $return .= '</tr> <tr>';
-    if($user_role != 3) {
-        $connection = db_connection();
-        $query = "SELECT school_id, school_name FROM schools ORDER BY school_name";
-        $results = $connection->query($query);
-        $return .= '<td> Sélectionnez votre école </td>';
-        $return .= '<td> <select name="user_school">';
-        $return .= '<option value="" disabled selected hidden> Choisissez une école </option>';
-        while($row = $results->fetch_assoc()) {
-            $return .= '<option value="' .$row['school_id'] .'">' .$row['school_name'] .'</option>';
-        }
-        $return .= '</select> </td>';
-        $return .= '</tr> <tr>';
-        $connection->close();
+    $connection = db_connection();
+    $query = "SELECT school_id, school_name FROM schools ORDER BY school_name";
+    $results = $connection->query($query);
+    $return .= '<td> Sélectionnez votre école </td>';
+    $return .= '<td> <select name="user_school">';
+    $return .= '<option value="" disabled selected hidden> Choisissez une école </option>';
+    while($row = $results->fetch_assoc()) {
+        $return .= '<option value="' .$row['school_id'] .'">' .$row['school_name'] .'</option>';
     }
-    if($user_role == 2) {
-        $return .= '<td colspan=2> Joindre un justificatif de votre rôle dans la vie associative de cette école : </td>';
-        $return .= '</tr> <tr>';
-        $return .= '<td colspan=2> <input id="real_button" hidden="hidden" type="file" name="org_report_upl"/>';
-        $return .= '<button type="button" id="fake_button"> Choisir un fichier </button> <span id="fake_text"> Aucun fichier choisi. </span> </td>';
-        $return .= '</tr> <tr>';
-    }
+    $return .= '</select> </td>';
+    $return .= '</tr> <tr>';
+    $connection->close();
     $return .= '<td colspan=2> <input type="submit" name="sign_in" value="S\'inscrire"> </td>';
     $return .= '</tr>';
     $return .= '</table>';
@@ -134,11 +86,6 @@ function signIn() {
         $user_log = $_POST['user_log'];
         $user_pass1 = $_POST['user_pass1'];
         $user_pass2 = $_POST['user_pass2'];
-        $user_role = $_GET['account'];
-        if($user_role == 1)
-        $user_validated = 1;
-        else
-        $user_validated = 0;
         if(isset($_POST['user_school'])) {
             $user_school = $_POST['user_school'];
             if($user_name != "" AND $user_forename !="" AND $user_log != "" AND $user_pass1 != "" AND $user_pass2 != "") {
@@ -147,15 +94,11 @@ function signIn() {
                         $query = "SELECT user_login FROM users WHERE user_login = '$user_log'";
                         $results = $connection->query($query);
                         if($results->num_rows == 0) {
-                            $query = "INSERT INTO users(user_name, user_forename, user_login, user_pass, user_role, user_validated, user_school_id) VALUES ('$user_name', '$user_forename', '$user_log', '$user_pass1', '$user_role', '$user_validated', '$user_school')";
+                            $query = "INSERT INTO users(user_name, user_forename, user_login, user_pass, user_role, user_school_id) VALUES ('$user_name', '$user_forename', '$user_log', '$user_pass1', 1, '$user_school')";
                             $results = $connection->query($query);
-                            if ($connection->affected_rows == 1) {
-                                if($user_role == 1) {
-                                    $return = 'Inscription effectuée.';
-                                    addStudent($user_school);
-                                } else {
-                                    $return = 'Demande d\'inscription effectuée.';
-                                }
+                            if($connection->affected_rows == 1) {
+                                $return = 'Inscription effectuée.';
+                                addStudent($user_school);
                             } else {
                                 $return = 'Erreur lors de l\'inscription:' .$query .'<br>' .$connection->error;
                             }
@@ -187,6 +130,12 @@ function addStudent($school_id) {
     $connection->query($query);
 }
 
+function removeStudent($school_id) {
+    $connection = db_connection();
+    $query = "UPDATE schools SET school_nb_students = school_nb_students - 1 WHERE school_id = $school_id";
+    $connection->query($query);
+}
+
 //fonction d'affichage du formulaire de connexion
 function logInForm() {
     $return = '<form action="#" method="POST">';
@@ -215,29 +164,24 @@ function logIn() {
         if($_POST['login'] != "" && $_POST['password'] != "") {
             $login = $_POST['login'];
             $password = $_POST['password'];
-            $query = "SELECT * FROM users WHERE user_login = '$login' AND user_pass = '$password' AND user_validated = 0";
-            $result = $connection->query($query);
-            if($result->num_rows == 0) {
-                $query = "SELECT * FROM users WHERE user_login = '$login' AND user_pass = '$password' AND user_validated = 1";
-                $results = $connection->query($query);
-                if($results->num_rows > 0) {
-                    while($row = $results->fetch_assoc()) {
-                        $return = 'Identifiants corrects.';
-                        session_start();
-                        $_SESSION['account_connected'] = true;
-                        $_SESSION['account_id'] = $row['user_id'];
-                        $_SESSION['account_login'] = $row['user_login'];
-                        $_SESSION['account_name'] = $row['user_name'];
-                        $_SESSION['account_forename'] = $row['user_forename'];
-                        $_SESSION['account_role'] = $row['user_role'];
-                        echo($_SESSION['account_connected'] .' ' .$_SESSION['account_login'] .' ' .$_SESSION['account_name'] .' ' .$_SESSION['account_forename'] .' ' .$_SESSION['account_role']);
-                        header('location: ../index.php');
-                    }
-                } else {
-                    $return = 'Identifiants incorrects.';
+            $query = "SELECT * FROM users WHERE user_login = '$login' AND user_pass = '$password'";
+            $results = $connection->query($query);
+            if($results->num_rows > 0) {
+                while($row = $results->fetch_assoc()) {
+                    $return = 'Identifiants corrects.';
+                    session_start();
+                    $_SESSION['account_connected'] = true;
+                    $_SESSION['account_id'] = $row['user_id'];
+                    $_SESSION['account_login'] = $row['user_login'];
+                    $_SESSION['account_name'] = $row['user_name'];
+                    $_SESSION['account_forename'] = $row['user_forename'];
+                    $_SESSION['account_role'] = $row['user_role'];
+                    if($row['user_role'] == 1 || $row['user_role'] == 2)
+                    $_SESSION['account_school_id'] = $row['user_school_id'];
+                    header('location: ../index.php');
                 }
             } else {
-                $return = 'Votre demande d\'inscription n\'a pas encore été validée.';
+                $return = 'Identifiants incorrects.';
             }
             $connection->close();
         }
@@ -325,7 +269,7 @@ function displayMySchool() {
 //Fonction d'affichage d'un bouton pour changer d'école
 function displayChangeSchoolButton() {
     $return = '<form action="#" method="POST">';
-    $return .= '<input type="submit" name="change_school" value="Retour">';
+    $return .= '<input type="submit" name="change_school" value="Changer d\'école">';
     $return .= '</form>';
     return $return;
 }
@@ -338,33 +282,63 @@ function changeSchoolForm() {
         $query = "SELECT school_id, school_name FROM schools ORDER BY school_name";
         $results = $connection->query($query);
         $return = '<form action="#" method="POST">';
-        $return = '<td> Sélectionnez votre école </td>';
-        $return .= '<td> <select name="user_school">';
+        $return .= '<table>';
+        $return .= '<tr>';
+        $return .= '<td colspan=2> Sélectionnez votre nouvelle école </td>';
+        $return .= '</tr> <tr>';
+        $return .= '<td> <select name="new_school">';
         $return .= '<option value="" disabled selected hidden> Choisissez une école </option>';
         while($row = $results->fetch_assoc()) {
             $return .= '<option value="' .$row['school_id'] .'">' .$row['school_name'] .'</option>';
         }
         $return .= '</select> </td>';
-        $return .= '</tr> <tr>';
+        $return .= '<td> <input type="submit" name="set_new_school" value="Valider"> </td>';
+        $return .= '</tr>';
+        $return .= '</table>';
+        $return .= '</form>';
         $connection->close();
     }
+    return $return;
+}
+
+function changeSchool() {
+    $return = null;
+    if(isset($_POST['set_new_school'])) {
+        if(isset($_POST['new_school'])) {
+            $user_id = $_SESSION['account_id'];
+            $currrent_school = $_SESSION['account_school_id'];
+            $new_school = $_POST['new_school'];
+            $connection = db_connection();
+            $query = "UPDATE users SET user_school_id = $new_school WHERE user_id = $user_id";
+            removeStudent($currrent_school);
+            addStudent($new_school);
+            $_SESSION['account_school_id'] = $new_school;
+            $connection->query($query);
+            $connection->close();
+            header('refresh: 0');
+        } else {
+            $return = 'Veuillez séléctionner votre nouvelle école svp.';
+        }
+    }
+    $return = '<p styl="color: red;">' .$return .'</p>';
+    return $return;
 }
 
 //Fonction d'affichage d'un formulaire de recherche d'école
-function searchSchoolForm(){
-	$return = '<form action="#" method="POST" style="margin-bottom:300px">';
-	$return .= '<table>';
-	$return .= '<tr>';
-	$return .= '<td colspan=2> <h3> Trouver votre école : </h3> </td>';
-	$return .= '</tr> <tr>';
-	$return .= '<td> <input type="text" id="school_id" onkeyup="autocomplet()" name="searched_school" autocomplete="off"> <ul id="school_list_id"> </ul> </td> </td>';
-	$return .= '<td> <input type="submit" name="search_school" value="Rechercher"> </td>';
-	$return .= '</tr>';
-	$return .= '</table>';
-	$return .= '</form>';
+function searchSchoolForm() {
+    $return = '<form action="#" method="POST" style="margin-bottom:300px">';
+    $return .= '<table>';
+    $return .= '<tr>';
+    $return .= '<td colspan=2> <h3> Trouver votre école : </h3> </td>';
+    $return .= '</tr> <tr>';
+    $return .= '<td> <input type="text" id="school_id" onkeyup="autocomplet()" name="searched_school" autocomplete="off"> <ul id="school_list_id"> </ul> </td> </td>';
+    $return .= '<td> <input type="submit" name="search_school" value="Rechercher"> </td>';
+    $return .= '</tr>';
+    $return .= '</table>';
+    $return .= '</form>';
     $return .= '<script type="text/javascript" src="../includes/js/jquery.min.js"></script>';
-	$return .= '<script type="text/javascript" src="../includes/js/autocomplete.js"></script>';
-	return $return;
+    $return .= '<script type="text/javascript" src="../includes/js/autocomplete.js"></script>';
+    return $return;
 }
 
 //Fonction de recherche d'école
@@ -436,6 +410,234 @@ function displaySchool() {
 /*--------------------------------------------------------------------------------------------------------------*/
 /*--------------------------------------------------------------------------------------------------------------*/
 
+function memberChoiceForm() {
+    $return = '<form action="#" method="POST">';
+    $return .= '<table>';
+    $return .= '<tr>';
+    $return .= '<td> <input type="submit" name="join_org_choice" value="Rejoindre une association"> </td>';
+    $return .= '<td> <input type="submit" name="create_org_choice" value="Inscrire mon asscoiation"> </td>';
+    $return .= '</tr>';
+    $return .= '</table>';
+    $return .= '</form>';
+    return $return;
+}
+
+function memberChoice() {
+    if(isset($_POST['join_org_choice'])) {
+        header('location: user_join_org.php');
+    }
+    if(isset($_POST['create_org_choice'])) {
+        header('location: user_create_org.php');
+    }
+}
+
+//Fonction d'affichage du formulaire de création d'associations
+function createOrgForm() {
+    $connection = db_connection();
+    $return = '<form action="#" method="POST">';
+    $return .= '<table>';
+    $return .= '<tr>';
+    $return .= '<td colspan=2> <h3> Créer mon association </h3> </td>';
+    $return .= '</tr> <tr>';
+    $return .= '<td> Nom de l\'assocation : </td> <td> <input type="text" name="org_name" autocomplete="off"> </td>';
+    $return .= '</tr> <tr>';
+    $return .= '<td> Mon poste dans l\'assocation : </td> <td> <input type="text" name="member_role" autocomplete="off"> </td>';
+    $return .= '</tr> <tr>';
+    $return .= '<td> Description de l\'assocation : </td> <td> <textarea name="org_description"></textarea> </td>';
+    $return .= '</tr> <tr>';
+    $return .= '<td> Je certifie être responsable de l\'association : </td>';
+    $return .= '<td> <input type="checkbox" value="is_responsable" name="org_responsable"> </td>';
+    $return .= '</tr> <tr>';
+    $return .= '<td> J\'accepte les conditions de la charte associative : </td>';
+    $return .= '<td> <input type="checkbox" value="rules_accepted" name="org_rules"> </td>';
+    $return .= '</tr> <tr>';
+    $return .= '<td colspan=2> <input type="submit" name="org_create"> </td>';
+    $return .= '</tr>';
+    $return .= '</table>';
+    $return .= '</form>';
+    $connection->close();
+    return $return;
+}
+
+//Fonction de création d'associations
+function createOrg() {
+    $connection = db_connection();
+    $return = null;
+    if(isset($_POST['org_create'])) {
+        $org_school_id = $_SESSION['account_school_id'];
+        $org_name = $_POST['org_name'];
+        $member_role = $_POST['member_role'];
+        $org_description = $_POST['org_description'];
+        if($org_name != "" AND $org_description != "" AND $member_role != "") {
+            if(isset($_POST['org_responsable']) AND isset($_POST['org_rules'])) {
+                $org_reponsable = $_POST['org_responsable'];
+                $org_rules = $_POST['org_rules'];
+                if($org_reponsable == "is_responsable") {
+                    if($org_rules == "rules_accepted") {
+                        $org_name = $_POST['org_name'];
+                        $query = "SELECT organization_name FROM organizations WHERE organization_name = '$org_name'";
+                        $result = $connection->query($query);
+                        if($result->num_rows == 0) {
+                            if(strlen($org_name) < 50) {
+                                if(strlen($org_description) < 500) {
+                                    if(stringVerify($org_name)) {
+                                        if(stringVerify($org_description)) {
+                                            if(stringVerify($member_role)) {
+                                                $query = "INSERT INTO organizations(organization_name, organization_description, organization_school_id, organization_nb_members, organization_validated) VALUES ('$org_name', '$org_description', '$org_school_id', 0, 0)";
+                                                $results = $connection->query($query);
+                                                if ($connection->affected_rows == 1) {
+                                                    $return = 'Demande d\'inscription de l\'association effectuée.';
+                                                    $query = "SELECT organization_id FROM organizations WHERE organization_name = '$org_name'";
+                                                    $result = $connection->query($query);
+                                                    $row = $result->fetch_assoc();
+                                                    $org_id = $row['organization_id'];
+                                                    $user_id = $_SESSION['account_id'];
+                                                    addMember($org_id, $user_id, $member_role);
+                                                } else {
+                                                    $return = 'Un problème est survenu lors de l\'inscription de l\'association.';
+                                                }
+                                            } else {
+                                                $return = 'Le nom du poste ne peut pas contenir de cractères spéciaux.';
+                                            }
+                                        } else {
+                                            $return = 'La description de l\'association ne peut pas contenir de cractères spéciaux.';
+                                        }
+                                    } else {
+                                        $return = 'Le nom de l\'association ne peut pas contenir de cractères spéciaux.';
+                                    }
+                                } else {
+                                    $return = 'La description de l\'association ne peut pas dépasser les 500 caractères';
+                                }
+                            } else {
+                                $return = 'Le nom de l\'assocation ne peut pas dépasser les 50 caractères.';
+                            }
+                        } else {
+                            $return = 'Ce nom d\'association est déja utilisé.';
+                        }
+                        $connection->close();
+                    } else {
+                        $return = 'Vous devez accepter la charte associative.';
+                    }
+                } else {
+                    $return = 'Vous devez être responsable de l\'association pour pouvoir l\'inscrire';
+                }
+            } else {
+                $return = 'Veuillez remplir les champs requis.';
+            }
+        } else {
+            $return = 'Veuillez remplir les champs requis.';
+        }
+    }
+    $return = '<p style="color: red">' .$return .'</p>';
+    return $return;
+}
+
+//Fonction d'affichage d'un formulaire pour rejoindre une association
+function joinOrgForm() {
+    $return = null;
+    $connection = db_connection();
+    $query = "SELECT organization_id, organization_name FROM organizations WHERE organization_validated = 1 ORDER BY organization_name";
+    $results = $connection->query($query);
+    if($results->num_rows != 0) {
+        $return = '<form action="#" method="POST">';
+        $return .= '<table>';
+        $return .= '<tr>';
+        $return .= '<td> Sélectionnez votre association </td>';
+        $return .= '<td> <select name="org_joined">';
+        $return .= '<option value="" disabled selected hidden> Choisissez une association </option>';
+        while($row = $results->fetch_assoc()) {
+            $return .= '<option value="' .$row['organization_id'] .'">' .$row['organization_name'] .'</option>';
+        }
+        $return .= '</select> </td>';
+        $return .= '</tr> <tr>';
+        $return .= '<td> Mon poste dans l\'assocation : </td> <td> <input type="text" name="member_role"> </td>';
+        $return .= '</tr> <tr>';
+        $return .= '<td> <input type="submit" name="join_org" value="Rejoindre l\'association"> </td>';
+        $return .= '</tr>';
+        $return .= '</table>';
+        $return .= '</form>';
+    } else {
+        $return = 'Aucune assocation renseignée pour le moment.';
+    }
+    $connection->close();
+    return $return;
+}
+
+//Fonction d'ajout d'un membre dans une assocation
+function joinOrg() {
+    $return = null;
+    $connection = db_connection();
+    if(isset($_POST['join_org'])) {
+        if(isset($_POST['org_joined']) AND $_POST['org_joined'] != "") {
+            $org_id = $_POST['org_joined'];
+            $user_id = $_SESSION['account_id'];
+            $member_role = $_POST['member_role'];
+            if($member_role != "") {
+                if(stringVerify($member_role)) {
+                    $query = "SELECT member_organization_id, member_user_id, member_validated FROM members WHERE member_user_id = '$user_id'";
+                    $result = $connection->query($query);
+                    if($result->num_rows == 0) {
+                        addMember($org_id, $user_id, $member_role);
+                        $query = "SELECT organization_name FROM organizations WHERE organization_id = '$org_id'";
+                        $result = $connection->query($query);
+                        $row = $result->fetch_assoc();
+                        $org_name = $row['organization_name'];
+                        $return = 'Votre demande pour rejoindre ' .$org_name .' a été prise en compte.';
+                    } else {
+                        while($row = $result->fetch_assoc()) {
+                            if($row['member_organization_id'] != $org_id) {
+                                addMember($org_id, $user_id, $member_role);
+                                $query = "SELECT organization_name FROM organizations WHERE organization_id = '$org_id'";
+                                $result = $connection->query($query);
+                                $row = $result->fetch_assoc();
+                                $org_name = $row['organization_name'];
+                                $return = 'Votre demande pour rejoindre ' .$org_name .' a été prise en compte.';
+                            } else {
+                                if($row['member_validated'] == 1)
+                                $return = 'Vous faites déja partie de cette association.';
+                                else
+                                $return = 'Vous avez déja fait une demande pour rejoindre cette association.';
+                            }
+                        }
+                    }
+                } else {
+                    $return = 'Le nom du poste ne peut pas contenir de cractères spéciaux.';
+                }
+            } else {
+                $return = 'Veuillez renseigner votre poste dans l\'association.';
+            }
+        } else {
+            $return = 'Veuillez séléctionner une association.';
+        }
+    }
+    $return = '<p style="color: red;">' .$return .'</p>';
+    return $return;
+}
+
+/*--------------------------------------------------------------------------------------------------------------*/
+/*--------------------------------------------------------------------------------------------------------------*/
+
+//Fonction de création d'un membre
+function addMember($org_id, $user_id, $member_role) {
+    $query = "INSERT INTO members VALUES('$member_role', '$org_id', '$user_id', 0)";
+    $connection = db_connection();
+    $connection->query($query);
+    $connection->close();
+}
+
+//Fonction de validation d'un membre d'une associations
+function validateMember($org_id, $user_id) {
+    $connection = db_connection();
+    $query = "UPDATE members SET member_validated = 1 WHERE member_organization_id = '$org_id' AND WHERE member_user_id = '$user_id'";
+    $connection->query($query);
+    $query = "UPDATE organizations SET organization_nb_members = organization_nb_members + 1 WHERE organization_id = '$org_id'";
+    $connection->query($query);
+    $connection->close();
+}
+
+/*--------------------------------------------------------------------------------------------------------------*/
+/*--------------------------------------------------------------------------------------------------------------*/
+
 function displayMenu() {
     $user_role = $_SESSION['account_role'];
     $return = null;
@@ -444,13 +646,21 @@ function displayMenu() {
         $return .= '<ul>';
         $return .= '<li> <a href="user_display_my_school.php"> Voir mon école </a> </li>';
         $return .= '<li> <a href="user_search_school.php"> Chercher une école </a> </li>';
-        $return .= '<li> <a href="#"> Adhérer à une association </a> </li>';
-        $return .= '<li> <a href="#"> Je suis membre d\'une association </a> </li>';
+        $return .= '<li> <a href="user_member_choice.php"> Je suis membre d\'une association </a> </li>';
         $return .= '</ul>';
         break;
         case 2:
+        $return .= '<ul>';
+        $return .= '<li> <a href="manager_display_my_school.php"> Voir mon école </a> </li>';
+        $return .= '<li> <a href=manager_search_school.php"> Chercher une école </a> </li>';
+        $return .= '<li> <a href="manager_manage.php"> Je suis membre d\'une association </a> </li>';
+        $return .= '</ul>';
         break;
         case 3:
+        $return .= '<li> <a href="admin_manage_user.php"> Gérer les comptes utilisateurs </a> </li>';
+        $return .= '<li> <a href="admin_manage_manager.php"> Gérer les comptes managers </a> </li>';
+        $return .= '<li> <a href="admin_manage_admin.php"> Gérer les comptes administrateurs </a> </li>';
+        $return .= '</ul>';
         break;
     }
     return $return;
@@ -560,19 +770,19 @@ function backButton($location = '../index.php') {
 
 //fonction de validation d'une chaîne de caractères
 function stringVerify($string) {
-	$not_allowed = array("\\", "/", ":", ";", ",", "*", "?", "\"", ">", "<", "|", ".");
-	$count = count($not_allowed);
+    $not_allowed = array("\\", "/", ":", ";", ",", "*", "?", "\"", ">", "<", "|", ".");
+    $count = count($not_allowed);
 
-	for($i = 0; $i<$count; $i++){
-		$pos = strpos($string, $not_allowed[$i]);
-		if($pos === false) {
-			$verified = true;
-		} else {
-			$verified = false;
-			return $verified;
-		}
-	}
-	return $verified;
+    for($i = 0; $i<$count; $i++){
+        $pos = strpos($string, $not_allowed[$i]);
+        if($pos === false) {
+            $verified = true;
+        } else {
+            $verified = false;
+            return $verified;
+        }
+    }
+    return $verified;
 }
 
 /*--------------------------------------------------------------------------------------------------------------*/

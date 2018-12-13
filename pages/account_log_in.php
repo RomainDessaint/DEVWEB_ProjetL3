@@ -16,7 +16,6 @@ session_start();
 
 	<section>
 		<h1> Se connecter </h1>
-
 		<?php
 		if(accountIsConnected()) {
 			echo('Vous êtes déja connecté.');
