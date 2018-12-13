@@ -843,7 +843,7 @@ function registerManager(){
                 if($result->num_rows > 0){
                     return "Ce manager a déjà été inscrit";
                 } else {
-                    $query = "INSERT INTO users(user_name, user_forename, user_login, user_pass, user_role, user_validated, user_school_id) VALUES('$manager_name', '$manager_forename', '$manager_log', '$manager_pass1', 2, 1, '$school_id')";
+                    $query = "INSERT INTO users(user_name, user_forename, user_login, user_pass, user_role, user_school_id) VALUES('$manager_name', '$manager_forename', '$manager_log', '$manager_pass1', 2, '$school_id')";
                     $result = $connection->query($query);
                     if($result === TRUE) {
                         $return = "Inscription de $manager_forename $manager_name réussie";
@@ -875,7 +875,7 @@ function awaitingValidationOrganizations() {
                 $return .= '<tr>';
                     $return .= '<td>' . $row['organization_name'] . '</td>';
                     $return .= '<td>' . $row['school_name'] . '</td>';
-                    $return .= '<td> Demande par '.$row['user_name'].' '.$row['user_forename'];
+                    $return .= '<td> Demande par '.$row['user_name'].' '.$row['user_forename']. '</td>';
                     $return .= '<td> <input type="submit" value="Valider la demande" name="organization'.$row['organization_id'].'"> </td>';
                 $return .= '</tr>';
             }
@@ -888,7 +888,6 @@ function awaitingValidationOrganizations() {
     } else {
         return "Vous n'avez pas les droits pour effectuer des actions ici";
     }
-
 }
 
 function validatingOrganizations() {
@@ -907,6 +906,51 @@ function validatingOrganizations() {
             }
         }
     }
+}
 
+function awaitingValidationMembers() {
+    $connection = db_connection();
+    $query = 'SELECT user_forename, user_name, organization_name, member_user_id FROM members INNER JOIN users ON members.member_user_id = users.user_id INNER JOIN organizations ON members.member_organization_id=organizations.organization_id WHERE member_validated = 0';
+    $result = $connection->query($query);
+    if($result->num_rows > 0){
+        $return = '<form action="#" method="POST">';
+        $return .= '<table>';
+        $return .= '<tr> <td colspan = 4> Associations à valider </td> </tr>';
+        $return .= '<tr> <th> Prénom </th> <th> Nom </th> <th> Association </th> <th> Valider </th> </tr> ';
+        while($row = $result->fetch_assoc()) {
+            $return .= '<tr>';
+                $return .= '<td>' . $row['user_forename'] . '</td>';
+                $return .= '<td>' . $row['user_name'] . '</td>';
+                $return .= '<td>' . $row['organization_name'] .'</td>';
+                $return .= '<td> <input type="submit" value="Valider la demande" name="member'.$row['member_user_id'].'"> </td>';
+            $return .= '</tr>';
+        }
+        $return .= '</table>';
+
+        return $return;
+    } else {
+        return "Il n'y a plus de membres à valider";
+    }
+}
+
+function validatingMembers() {
+    $connection = db_connection();
+    $query = 'SELECT member_user_id, user_name, user_forename, organization_id FROM members INNER JOIN users ON members.member_user_id = users.user_id INNER JOIN organizations ON members.member_organization_id=organizations.organization_id WHERE member_validated = 0';
+    $result = $connection->query($query);
+    for ($i=0; $i < $result->num_rows; $i++) {
+        while($row = $result->fetch_assoc()){
+            if (isset($_POST['member'.$row['member_user_id']])) {
+                $query = 'UPDATE members SET member_validated = 1 WHERE member_user_id='.$row['member_user_id'];
+                $result = $connection->query($query);
+                if ($result === TRUE) {
+                    echo "La demande de ".$row['user_forename']." ". $row['user_name'] ." a bien été acceptée <hr/>";
+                    header('Refresh: 1;url=manager_manage_members.php');
+                    exit();
+                } else {
+                    return "Problème survenu lors de la validation";
+                }
+            }
+        }
+    }
 }
 ?>
