@@ -7,7 +7,7 @@ session_start();
 <html lang = "fr">
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-	<title> Administrateur - Inscrire un manager </title>
+	<title> Administrateur - Rechercher une école </title>
 </head>
 
 <body>
@@ -18,12 +18,12 @@ session_start();
 	</header>
 
 	<section>
-		<h1> Administrateur - Inscrire un manager </h1>
+		<h1> Administrateur - Rechercher une école </h1>
 		<?php
 		if(accountIsConnected()) {
 			if(adminIsConnected()) {
-				echo registerManagerForm();
-				echo registerManager();
+				echo searchSchoolForm();
+				echo searchSchool();
 			} else {
 				echo('Vous n\'êtes pas autorisé à accèder à cette page.');
 			}

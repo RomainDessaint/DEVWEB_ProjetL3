@@ -1,13 +1,14 @@
 <?php
 include('../includes/functions.inc.php');
 session_start();
+$school_name = getSchoolName();
 ?>
 
 <!DOCTYPE html>
 <html lang = "fr">
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-	<title> Administrateur - Inscrire un manager </title>
+	<title> Administrateur - <?php echo $school_name ?> </title>
 </head>
 
 <body>
@@ -18,12 +19,11 @@ session_start();
 	</header>
 
 	<section>
-		<h1> Administrateur - Inscrire un manager </h1>
+		<h1> Administrateur - <?php echo $school_name ?> </h1>
 		<?php
 		if(accountIsConnected()) {
 			if(adminIsConnected()) {
-				echo registerManagerForm();
-				echo registerManager();
+				echo displaySchool();
 			} else {
 				echo('Vous n\'êtes pas autorisé à accèder à cette page.');
 			}
@@ -33,7 +33,7 @@ session_start();
 			echo logButton();
 		}
 		echo displayBackButton();
-		echo backButton('admin_logged.php');
+		echo backButton('admin_search_school.php');
 		?>
 	</section>
 </body>
