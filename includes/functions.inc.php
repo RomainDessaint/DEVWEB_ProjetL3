@@ -578,4 +578,125 @@ function stringVerify($string) {
 /*--------------------------------------------------------------------------------------------------------------*/
 /*--------------------------------------------------------------------------------------------------------------*/
 
+function registerManagerForm() {
+    $return = '<form action="#" method="POST">';
+    $return .= '<table>';
+    $return .= '<tr>';
+    $return .= '<td colspan=2> <h3> Enregistrer un manager : </h3>';
+    $return .= '</tr> <tr>';
+    $return .= '<td> Nom : </td> <td> <input type="text" name="manager_name"> </td>';
+    $return .= '</tr> <tr>';
+    $return .= '<td> Prénom : </td> <td> <input type="text" name="manager_forename"> </td>';
+    $return .= '</tr> <tr>';
+    $return .= '<td> Manager de quelle école ? </td> <td> <input type="text" id="school_id" onkeyup="autocomplet()" name="manager_school" autocomplete="off"> <ul id="school_list_id"> </ul> </td> </td>';
+    $return .= '</tr> <tr>';
+    $return .= '<td> Identifiant </td> <td> <input type="text" name="login"> </td>';
+    $return .= '</tr> <tr>';
+    $return .= '<td> Mot de passe </td> <td> <input type="password" name="pass1"> </td>';
+    $return .= '</tr> <tr>';
+    $return .= '<td> Mot de passe </td> <td> <input type="password" name="pass2"> </td>';
+    $return .= '</tr> <tr>';
+    $return .= '<td colspan=2 style="text-align:center"> <input type="submit" name="create_manager" value="S\'inscrire"> </td>';
+    $return .= '</tr>';
+    $return .= '</table>';
+    $return .= '</form>';
+    $return .= '<script type="text/javascript" src="../includes/js/jquery.min.js"></script>';
+    $return .= '<script type="text/javascript" src="../includes/js/autocomplete.js"></script>';
+
+    return $return;
+}
+
+function registerManager(){
+    if (isset($_POST['create_manager'])) {
+
+        $manager_name = $_POST['manager_name'];
+        $manager_forename = $_POST['manager_forename'];
+        $manager_log = $_POST['login'];
+        $manager_pass1 = $_POST['pass1'];
+        $manager_pass2 = $_POST['pass2'];
+        $manager_school = $_POST['manager_school'];
+
+        if($manager_name != "" AND $manager_log != "" AND $manager_pass1 != "" AND $manager_pass2 != "" AND $manager_school != "") {
+            if($manager_pass1 === $manager_pass2) {
+                $connection = db_connection();
+                $query = "SELECT school_id FROM schools WHERE school_name = '$manager_school'";
+                $result = $connection->query($query);
+                if($result->num_rows > 0){
+                    $row = $result->fetch_assoc();
+                    $school_id = $row['school_id'];
+                    $_SESSION['account_school_id'] = $school_id;
+                } else {
+                    return  "L'école recherchée n'existe pas.";
+                }
+                $query = "SELECT * FROM users WHERE user_name = '$manager_name' AND user_forename = '$manager_forename'";
+                $result = $connection->query($query);
+                if($result->num_rows > 0){
+                    return "Ce manager a déjà été inscrit";
+                } else {
+                    $query = "INSERT INTO users(user_name, user_forename, user_login, user_pass, user_role, user_validated, user_school_id) VALUES('$manager_name', '$manager_forename', '$manager_log', '$manager_pass1', 2, 1, '$school_id')";
+                    $result = $connection->query($query);
+                    if($result === TRUE) {
+                        $return = "Inscription de $manager_forename $manager_name réussie";
+                    } else {
+                        $return = "Problème survenu lors de la création du manager";
+                    }
+                }
+            } else {
+                $return = 'Les mots de passe ne correspondent pas.';
+            }
+        } else {
+            $return = 'Veuillez remplir les champs requis';
+        }
+        return $return;
+    }
+}
+
+function awaitingValidationOrganizations() {
+    if (managerIsConnected() || adminIsConnected()) {
+        $connection = db_connection();
+        $query = 'SELECT organization_name, school_name, user_name, user_forename, organization_id FROM organizations INNER JOIN schools ON organizations.organization_school_id = schools.school_id INNER JOIN members ON members.member_organization_id=organizations.organization_id INNER JOIN users ON users.user_id = members.member_user_id WHERE organization_validated = 0 AND school_id = '.$_SESSION['account_school_id'];
+        $result = $connection->query($query);
+        if($result->num_rows > 0){
+            $return = '<form action="#" method="POST">';
+            $return .= '<table>';
+            $return .= '<tr> <td colspan = 4> Associations à valider </td> </tr>';
+            $return .= '<tr> <th> Association </th> <th> Ecole </th> <th> Demande </th> <th> Valider </th> </tr> ';
+            while($row = $result->fetch_assoc()) {
+                $return .= '<tr>';
+                    $return .= '<td>' . $row['organization_name'] . '</td>';
+                    $return .= '<td>' . $row['school_name'] . '</td>';
+                    $return .= '<td> Demande par '.$row['user_name'].' '.$row['user_forename'];
+                    $return .= '<td> <input type="submit" value="Valider la demande" name="organization'.$row['organization_id'].'"> </td>';
+                $return .= '</tr>';
+            }
+            $return .= '</table>';
+
+            return $return;
+        } else {
+            return "Il n'y a plus d'associations à valider";
+        }
+    } else {
+        return "Vous n'avez pas les droits pour effectuer des actions ici";
+    }
+
+}
+
+function validatingOrganizations() {
+    $connection = db_connection();
+    $query = 'SELECT organization_name, organization_id FROM organizations INNER JOIN schools ON organizations.organization_school_id = schools.school_id INNER JOIN members ON members.member_organization_id=organizations.organization_id INNER JOIN users ON users.user_id = members.member_user_id WHERE organization_validated = 0 AND school_id = '.$_SESSION['account_school_id'];
+    $result = $connection->query($query);
+    for ($i=0; $i < $result->num_rows; $i++) {
+        $row = $result->fetch_assoc();
+        if (isset($_POST['organization'.$row['organization_id']])) {
+            $query = 'UPDATE organizations SET organization_validated = 1 WHERE organization_id='.$row['organization_id'];
+            $result = $connection->query($query);
+            if ($result === TRUE) {
+                return "La demande pour l'association ".$row['organization_name'] ."a bien été acceptée";
+            } else {
+                return "Problème survenu lors de la validation";
+            }
+        }
+    }
+
+}
 ?>
