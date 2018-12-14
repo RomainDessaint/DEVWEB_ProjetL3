@@ -43,7 +43,7 @@ function notRegistered() {
     }
 }
 
-//Fonction d'affichage d'un formulaire d'un utilisateur ou d'une organisation
+//Fonction d'affichage d'un formulaire d'inscription
 function signInForm() {
     $return = '<form action="#" method="POST">';
     $return .= '<table>';
@@ -80,7 +80,7 @@ function signInForm() {
     return $return;
 }
 
-//Fonction d'inscription d'un utilisateur ou d'une organisation
+//Fonction d'inscription d'un utilisateur
 function signIn() {
     $connection = db_connection();
     $return = null;
@@ -564,8 +564,385 @@ function addMember($org_id, $user_id, $member_role) {
     $connection->close();
 }
 
-/*-----------------------------------------------------DIVERS----------------------------------------------------*/
+/*--------------------------------------------AFFICHER LES ASSOCIATION-------------------------------------------*/
 
+//Fonction d'affichage de la liste des association d'une école
+function orgList() {
+    $return = null;
+    $connection = db_connection();
+    if(isset($_GET['searched_school'])) {
+        $school_id = $_GET['searched_school'];
+    } else {
+        $school_id = $_SESSION['account_school_id'];
+    }
+    $query = "SELECT * FROM organizations WHERE organization_school_id = '$school_id'";
+    $results = $connection->query($query);
+    if($results->num_rows > 0) {
+        $return .= '<form action="#" method="POST">';
+        $return .= '<table>';
+        $return .= '<td colspan=3> Liste des associations </td>';
+        $return .= '<tr> <th> Nom de l\'association </th> <th> Description </th> <th> En savoir plus </th> </tr>';
+        while($row = $results->fetch_assoc()) {
+            $return .= '<tr>';
+            $return .= '<td>' .$row['organization_name'] .'</td>';
+            $return .= '<td>' .$row['organization_description'] .'</td>';
+            $return .= '<td> <input type="submit" name="more_information_'.$row['organization_id'] .'" value="En savoir plus"> </td>';
+            $return .= '</tr>';
+        }
+        $return .= '</table>';
+        $return .= '</form>';
+    } else {
+        $return = 'Aucune association enregistrée dans cette école.';
+    }
+    return $return;
+}
+
+//Fonction de redirection vers la page d'une association
+function moreInformationOrg() {
+    $return = null;
+    $connection = db_connection();
+    if(isset($_GET['searched_school'])) {
+        $school_id = $_GET['searched_school'];
+    } else {
+        $school_id = $_SESSION['account_school_id'];
+    }
+    $query = "SELECT * FROM organizations WHERE organization_school_id = '$school_id' AND organization_validated = 1";
+    $results = $connection->query($query);
+    for ($i=0; $i < $results->num_rows; $i++) {
+        while($row = $results->fetch_assoc()){
+            if(isset($_POST['more_information_'.$row['organization_id']])) {
+                $org_id = $row['organization_id'];
+                $account_role = $_SESSION['account_role'];
+                if($account_role == 1)
+                header('location: user_display_org.php?searched_org='.$org_id);
+                if($account_role == 2)
+                header('location: manager_display_org.php?searched_org='.$org_id);
+                if($account_role == 3)
+                header('location: admin_display_org.php?searched_org='.$org_id);
+            }
+        }
+    }
+}
+
+//Fonction d'affichage d'une association
+function displayOrg() {
+    $return = null;
+    $connection = db_connection();
+    if(isset($_GET['searched_org'])) {
+        $org_id = $_GET['searched_org'];
+        $query = "SELECT * FROM members INNER JOIN organizations ON members.member_organization_id = '$org_id' AND organizations.organization_id = '$org_id' INNER JOIN users ON users.user_id = members.member_user_id";
+        $result = $connection->query($query);
+        $return = '<table>';
+        if ($result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            $return .= '<tr>';
+            $return .= '<td> <h2> '.$row['organization_name'].'</h2> </td>';
+            $return .= '</tr> <tr>';
+            $return .= '<td> Membres dans l\'association : '.$row['organization_nb_members'].'</td>';
+            $return .= '</tr> </table>';
+
+            $return .= '<table>';
+            $return .= '<tr>';
+            $return .= '<td colspan=3> <h3> Membres de l\'association </h3> </td>';
+            $return .= '</tr> <tr>';
+            $return .= '<th> Prénom </th> <th> Nom </th> <th> Rôle </th>';
+            $return .= '</tr>';
+            $return .= '<tr>';
+            $return .= '<td>'.$row['user_forename'].'</td>';
+            $return .= '<td>'.$row['user_name'].'</td>';
+            $return .= '<td>'.$row['member_role'].'</td>';
+            $return .= '</tr>';
+            while($row = $result->fetch_assoc()) {
+                $return .= '<tr>';
+                $return .= '<td>'.$row['user_forename'].'</td>';
+                $return .= '<td>'.$row['user_name'].'</td>';
+                $return .= '<td>'.$row['member_role'].'</td>';
+                $return .= '</tr>';
+            }
+        } else {
+            $query = "SELECT * FROM organizations WHERE organization_id = '$org_id'";
+            $result = $connection->query($query);
+            $row = $result->fetch_assoc();
+            $return .= '<td> <h2> '.$row['organization_name'].'</h2> </td>';
+            $return .= '</tr> <tr>';
+            $return .= '<td> Membres dans l\'association : '.$row['organization_nb_members'].'</td>';
+            $return .= '</tr> </table>';
+
+            $return .= '<table>';
+            $return .= '<tr>';
+            $return .= '<td colspan=3> <h3> Membres de l\'association </h3> </td>';
+            $return .= '</tr> <tr>';
+            $return .= '<th> Prénom </th> <th> Nom </th> <th> Rôle </th>';
+            $return .= '</tr> <tr>';
+            $return .= '<td colspan=3> Aucun membres renseignés </td>';
+            $return .= '</tr>';
+        }
+        $return .= '</table>';
+
+        $user_id = $_SESSION['account_id'];
+        $query = "SELECT member_user_id FROM members WHERE member_organization_id = '$org_id'";
+        $result = $connection->query($query);
+        while($row = $result->fetch_assoc()) {
+            if($row['member_user_id'] == $user_id) {
+                $return .= '<form method="POST">';
+                $return .= '<input type="submit" name="manage_org" value="Gérer l\'association">';
+                $return .= '</form>';
+            }
+        }
+        $account_role = $_SESSION['account_role'];
+        if($account_role == 2) {
+            $account_school_id = $_SESSION['account_school_id'];
+            $query = "SELECT organization_school_id FROM organizations WHERE organization_id = '$org_id'";
+            $result = $connection->query($query);
+            $row = $result->fetch_assoc();
+            if($account_school_id == $row['organization_school_id']) {
+                $return .= '<form method="POST">';
+                $return .= '<input type="submit" name="manage_org" value="Gérer l\'association">';
+                $return .= '</form>';
+            }
+        }
+    }
+    echo redirectManageOrg($org_id);
+    return $return;
+}
+
+//Fonction de redirection vers la page de modification de l'association
+function redirectManageOrg($org_id) {
+    if(isset($_POST['manage_org'])) {
+        $account_role = $_SESSION['account_role'];
+        if($account_role == 1)
+        header('location: user_manage_org.php?searched_org='.$org_id);
+        if($account_role == 2)
+        header('location: manager_manage_org.php?searched_org='.$org_id);
+        if($account_role == 3)
+        header('location: admin_manage_org.php?searched_org='.$org_id);
+    }
+}
+
+/*--------------------------------------------MODIFIER LES ASSOCIATION-------------------------------------------*/
+
+//Fonction de modification d'une association
+function manageOrg() {
+    $return = null;
+    $connection = db_connection();
+    if(isset($_GET['searched_org'])) {
+        $org_id = $_GET['searched_org'];
+        $query = "SELECT * FROM members INNER JOIN organizations ON members.member_organization_id = '$org_id' AND organizations.organization_id = '$org_id' INNER JOIN users ON users.user_id = members.member_user_id";
+        $result = $connection->query($query);
+        $return = '<form action=';
+        if(isset($_POST['addMember'])) {
+            $return .= '"#addMember" method="POST">';
+        } else {
+            $return .= '"#tableau" method="POST">';
+        }
+        $return .= '<table">';
+        if ($result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            $return .= '<tr>';
+            $return .= '<td> <h2> '.$row['organization_name'].'</h2> </td>';
+            $return .= '</tr> <tr>';
+            $return .= '<td> Membres dans l\'association : '.$row['organization_nb_members'].'</td>';
+            $return .= '</tr> </table>';
+
+            $return .= '<table id="tableau">';
+            $return .= '<tr>';
+            $return .= '<td colspan=3> <h3> Membres de l\'association </h3> </td>';
+            $return .= '</tr> <tr>';
+            $return .= '<th> Prénom </th> <th> Nom </th> <th> Rôle </th>';
+            $return .= '</tr>';
+            $return .= '<tr>';
+            $return .= '<td>'.$row['user_forename'].'</td>';
+            $return .= '<td>'.$row['user_name'].'</td>';
+            $return .= '<td>'.$row['member_role'].'</td>';
+            $return .= '<td> <input type="submit" name="modify_'.$row['member_user_id'].$row['member_organization_id'].'" value="Modifier"> </td>';
+            $return .= '<td> <input type="submit" name="delete_'.$row['member_user_id'].$row['member_organization_id'].'" value="Supprimer"> </td>';
+            $return .= '</tr>';
+            while($row = $result->fetch_assoc()) {
+                $return .= '<tr>';
+                $return .= '<td>'.$row['user_forename'].'</td>';
+                $return .= '<td>'.$row['user_name'].'</td>';
+                $return .= '<td>'.$row['member_role'].'</td>';
+                $return .= '<td> <input type="submit" name="modify_'.$row['member_user_id'].$row['member_organization_id'].'" value="Modifier"> </td>';
+                $return .= '<td> <input type="submit" name="delete_'.$row['member_user_id'].$row['member_organization_id'].'" value="Supprimer"> </td>';
+                $return .= '</tr>';
+            }
+        } else {
+            $query = "SELECT * FROM organizations WHERE organization_id = '$org_id'";
+            $result = $connection->query($query);
+            $row = $result->fetch_assoc();
+            $return .= '<td> <h2> '.$row['organization_name'].'</h2> </td>';
+            $return .= '</tr> <tr>';
+            $return .= '<td> Membres dans l\'association : '.$row['oragnization_nb_members'].'</td>';
+            $return .= '</tr> </table>';
+
+            $return .= '<table>';
+            $return .= '<tr>';
+            $return .= '<td colspan=3> <h3> Membres de l\'association </h3> </td>';
+            $return .= '</tr> <tr>';
+            $return .= '<th> Prénom </th> <th> Nom </th> <td> Rôle </th>';
+            $return .= '</tr> <tr>';
+            $return .= '<td colspan=3> Aucun membres renseignés </td>';
+            $return .= '</tr>';
+        }
+        $return .= '<tr>';
+        $return .= '<td colspan=5> <input type="submit" name="add_member" value="Ajouter des membres"> </td>';
+        $return .= '</tr>';
+        $return .= '</table>';
+        $return .= '</form>';
+    }
+    return $return;
+}
+
+//Fonction d'affichage d'un formulaire d'ajout de membre à une association si on appuie sur le bouton "ajouter un membre"
+function addMemberOrgFormIfSet() {
+    if(isset($_POST['add_member'])) {
+        echo addMemberOrgForm();
+    }
+}
+
+//Fonction d'affichage d'un formulaire d'ajout de membre à une association
+function addMemberOrgForm($forename = "", $name = "", $role = "", $btn = "validate_add_member", $value = "Ajouter") {
+    $return = '<form action="#tableau" method="POST">';
+    $return .= '<table id="addMember">';
+    $return .= '<tr style="border-bottom:1px solid black;">';
+    $return .= '<td> Prénom </td> <td> Nom </td> <td> Rôle </td>';
+    $return .= '</tr> <tr>';
+    $return .= '<td> <input type="text" name="forename" value="'.$forename.'"> </td>';
+    $return .= '<td> <input type="text" name="name" value="'.$name.'"> </td>';
+    $return .= '<td> <input type="text" name="role" value="'.$role.'"> </td>';
+    $return .= '</tr> <tr>';
+    $return .= '<td colspan=3> <input type="submit" name="'.$btn.'" value="'.$value.'"> </td>';
+    $return .= '</tr>';
+    $return .= '</table>';
+    $return .= '</form>';
+    return $return;
+}
+
+//Fonction d'ajout d'un membre dans une association par un membre de l'association
+function addMemberOrg() {
+    $connection = db_connection();
+    $return = null;
+    if(isset($_POST['validate_add_member'])) {
+        if(isset($_GET['searched_org'])) {
+            $org_id = $_GET['searched_org'];
+            $member_name = $_POST['name'];
+            $member_forename = $_POST['forename'];
+            $member_role = $_POST['role'];
+            $query = "SELECT * FROM users WHERE user_name = '$member_name' AND user_forename = '$member_forename'";
+            $result = $connection->query($query);
+            if($result->num_rows > 0) {
+                $row = $result->fetch_assoc();
+                $user_id = $row['user_id'];
+                $query = "INSERT INTO members(member_role, member_user_id, member_organization_id, member_validated) VALUES('$member_role', '$user_id', '$org_id', 1)";
+                $result = $connection->query($query);
+                if($result == TRUE) {
+                    $query = "UPDATE organizations SET organization_nb_members = organization_nb_members + 1 WHERE organization_id = '$org_id'";
+                    $connection->query($query);
+                    header('refresh: 0');
+                } else {
+                    $return = "Un prolème est survenu lors de l'ajout du membre.";
+                }
+                $connection->close();
+            } else {
+                $return = 'Cet utilisateur n\'existe pas.';
+            }
+        }
+    }
+    $return = '<p style="color: red;">'.$return .'</p>';
+    return $return;
+}
+
+//FOnction d'affichage d'un formulaire de modification d'un membre d'une association
+function orgManagementModifyForm() {
+    $return = null;
+    $connection = db_connection();
+    if(isset($_GET['searched_org'])) {
+        $org_id = $_GET['searched_org'];
+        $query = "SELECT * FROM members INNER JOIN users ON members.member_user_id = users.user_id WHERE member_organization_id = '$org_id'";
+        $result = $connection->query($query);
+        if($result->num_rows > 0) {
+            while($row = $result->fetch_assoc()) {
+                if(isset($_POST["modify_".$row['member_user_id'].$row['member_organization_id']])) {
+                    $forename = $row['user_forename'];
+                    $name = $row['user_name'];
+                    $role = $row['member_role'];
+                    $return = addMemberOrgForm($forename, $name, $role, "modify_member", "Modifier");
+                }
+            }
+        }
+    }
+    return $return;
+}
+
+//Fonction de modification d'un membre d'une association
+function orgManagementModify() {
+    $return = null;
+    $connection = db_connection();
+    if(isset($_GET['searched_org'])) {
+        if(isset($_POST['modify_member'])) {
+            $org_id = $_GET['searched_org'];
+            $member_forename = $_POST['forename'];
+            $member_name = $_POST['name'];
+            $member_role = $_POST['role'];
+            $query = "SELECT * FROM users WHERE user_name = '$member_name' AND user_forename = '$member_forename'";
+            $result = $connection->query($query);
+            if($result->num_rows > 0) {
+                $row = $result->fetch_assoc();
+                $user_id = $row['user_id'];
+                $query = "UPDATE members SET member_role = '$member_role', member_organization_id = '$org_id', member_user_id = '$user_id' WHERE member_user_id = '$user_id' AND member_organization_id = '$org_id'";
+                $result = $connection->query($query);
+                if($result === TRUE) {
+                    header('refresh: 0');
+                } else {
+                    $return = "Un problème est survenu lors de la modification du membre.";
+                }
+            } else {
+                $return = 'Cet utilisateur n\'existe pas.';
+            }
+        }
+    }
+    $return = '<p style="color:red;">' .$return .'</p>';
+    return $return;
+}
+
+//Fonction de suppression d'un membre d'une association
+function orgManagementDelete() {
+    $connection = db_connection();
+    $return = null;
+    if(isset($_GET['searched_org'])) {
+        $org_id = $_GET['searched_org'];
+        $query = "SELECT * FROM members WHERE member_organization_id = '$org_id'";
+        $result = $connection->query($query);
+        if($result->num_rows > 0) {
+            while($row = $result->fetch_assoc()) {
+                if(isset($_POST["delete_".$row['member_user_id'].$row['member_organization_id']])) {
+                    $member_user_id = $row['member_user_id'];
+                    $member_organization_id = $row['member_organization_id'];
+                    $query = "DELETE FROM members WHERE member_user_id = '$member_user_id' AND member_organization_id = '$member_organization_id'";
+                    $result = $connection->query($query);
+                    if($result == TRUE) {
+                        $query = "UPDATE organizations SET organization_nb_members = organization_nb_members - 1 WHERE organization_id = '$org_id'";
+                        $connection->query($query);
+                        $account_role = $_SESSION['account_role'];
+                        if($account_role == 1)
+                        header("refresh: 0;url=user_manage_org.php?searched_org=".$org_id."#tableau");
+                        if($account_role == 2)
+                        header("refresh: 0;url=manager_manage_org.php?searched_org=".$org_id."#tableau");
+                        if($account_role == 3)
+                        header("refresh: 0;url=admin_manage_org.php?searched_org=".$org_id."#tableau");
+                        exit();
+                    } else {
+                        $return = "Un prolème est survenu lors de la suppression du membre.";
+                    }
+                }
+            }
+            $return = '<p style="color:red;">' .$return .'</p>';
+            return $return;
+        }
+    }
+}
+
+/*-----------------------------------------------------DIVERS----------------------------------------------------*/
 
 //Fonction de récupération du nom d'une école
 function getSchoolName() {
@@ -578,6 +955,26 @@ function getSchoolName() {
             $row = $result->fetch_assoc();
             $school_name = $row['school_name'];
             return $school_name;
+        } else {
+            return null;
+        }
+    } else {
+        return null;
+    }
+}
+
+
+//Fonction de récupération du nom d'une association
+function getOrgName() {
+    $connection = db_connection();
+    if(isset($_GET['searched_org'])) {
+        $org_id = $_GET['searched_org'];
+        $query = "SELECT organization_name FROM organizations WHERE organization_id = '$org_id'";
+        $result = $connection->query($query);
+        if($result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            $org_name = $row['organization_name'];
+            return $org_name;
         } else {
             return null;
         }
@@ -646,7 +1043,7 @@ function memberChoice() {
 /*---------------------------------------------------------------------------------------------------------------*/
 /*---------------------------------------------------------------------------------------------------------------*/
 
-/*--------------------------------------------VALIDER UNE ASSOCIATION--------------------------------------------*/
+/*-------------------------------------------VALIDATION DES ASSOCIATION------------------------------------------*/
 
 //Fonction d'affichage des associations en attente de validation
 function awaitingValidationOrganizations() {
@@ -707,6 +1104,8 @@ function validatingOrganizations() {
     $return = '<p style="color:red;">' .$return .'</p>';
     return $return;
 }
+
+/*---------------------------------------------VALIDATION DES MEMBRES--------------------------------------------*/
 
 //Fonction d'affichage des membres en attente de validation
 function awaitingValidationMembers() {
@@ -791,8 +1190,7 @@ function registerSchoolForm() {
     return $return;
 }
 
-
-//FOnction de création d'une école
+//Fonction de création d'une école
 function registerSchool() {
     $connection = db_connection();
     $return = null;
@@ -907,6 +1305,102 @@ function registerManager() {
     return $return;
 }
 
+/*------------------------------------------- GESTION DES UTILISATEURS-------------------------------------------*/
+
+//Fonction d'affichage des utilisateurs
+function logList() {
+    $connection = db_connection();
+    $query = 'SELECT * FROM users INNER JOIN schools ON schools.school_id = users.user_school_id WHERE user_role = 1 OR user_role = 2';
+    $result = $connection->query($query);
+    if($result->num_rows > 0){
+        $return = '<form action="#" method="POST">';
+        $return .= '<table>';
+        $return .= '<tr> <td colspan = 6> Gérer les logs </td> </tr>';
+        $return .= '<tr> <th> Prénom </th> <th> Nom </th> <th> Ecole </th> <th> Login </th> <th> Role </th> <th> Supprimer </th> </tr> ';
+        while($row = $result->fetch_assoc()) {
+            $return .= '<tr>';
+            $return .= '<td>' . $row['user_forename'] .'</td>';
+            $return .= '<td>' . $row['user_name'] .'</td>';
+            $return .= '<td>' . $row['user_login'] .'</td>';
+            if ($row['user_role'] == 1) {
+                $return .= '<td> Utilisateur </td>';
+            } elseif ($row['user_role'] == 2) {
+                $return .= '<td> Manager </td>';
+            }
+            $return .= '<td>' . $row['school_name'] .'</td>';
+            $return .= '<td> <input type="submit" value="Supprimer" name="delete'.$row['user_id'].'"> </td>';
+            $return .= '</tr>';
+        }
+        $return .= '</table>';
+
+        return $return;
+    } else {
+        return "Il n'y a plus aucun compte utilisateur ou manager";
+    }
+}
+
+//Fonction de supression des utilisateurs
+function deleteLogin() {
+    $return = null;
+    $connection = db_connection();
+    $query = 'SELECT * FROM users INNER JOIN schools ON schools.school_id = users.user_school_id  WHERE user_role = 1 OR user_role = 2';
+    $result = $connection->query($query);
+    for ($i=0; $i < $result->num_rows; $i++) {
+        while($row = $result->fetch_assoc()){
+            if(isset($_POST['delete'.$row['user_id']])) {
+                $query = 'SELECT * FROM members INNER JOIN organizations ON members.member_organization_id = organizations.organization_id WHERE member_user_id ='.$row['user_id'];
+                $result1 = $connection->query($query);
+                if ($result1->num_rows > 0) {
+                    $row2 = $result1->fetch_assoc();
+                    $query = 'DELETE FROM members WHERE member_user_id='.$row['user_id'];
+                    $result2 = $connection->query($query);
+                    if ($result2 === TRUE) {
+                        $query = 'UPDATE organizations SET organization_nb_members = organization_nb_members-1 WHERE organization_id='.$row2['organization_school_id'];
+                        $result3 = $connection->query($query);
+                        if ($result3 === TRUE) {
+                            $query = 'DELETE FROM users WHERE user_id='.$row['user_id'];
+                            $result4 = $connection->query($query);
+                            if ($result4 === TRUE) {
+                                $query = 'UPDATE schools SET school_nb_students = school_nb_students-1 WHERE school_id='.$row['school_id'];
+                                $result5 = $connection->query($query);
+                                if ($result5 === TRUE) {
+                                    header('Refresh: 0');
+                                    exit();
+                                } else {
+                                    $return = "Problème survenu lors de la supression.";
+                                }
+                            } else {
+                                $return = "Problème survenu lors de la supression";
+                            }
+                        } else {
+                            $return = "Problème survenu lors de la supression";
+                        }
+                    } else {
+                        $return = "Problème survenu lors de la supression.";
+                    }
+                } else {
+                    $query = 'DELETE FROM users WHERE user_id='.$row['user_id'];
+                    $result4 = $connection->query($query);
+                    if ($result4 === TRUE) {
+                        $query = 'UPDATE schools SET school_nb_students = school_nb_students-1 WHERE school_id='.$row['school_id'];
+                        $result5 = $connection->query($query);
+                        if ($result5 === TRUE) {
+                            header('Refresh: 0');
+                            exit();
+                        } else {
+                            $return = "Problème survenu lors de la supression.";
+                        }
+                    } else {
+                        $return = "Problème survenu lors de la supression.";
+                    }
+                }
+            }
+        }
+    }
+    $return = '<p style="color: red;">' .$return .'</p>';
+    return $return;
+}
+
 /*----------------------------------------------------DIVERS-----------------------------------------------------*/
 /*---------------------------------------------------------------------------------------------------------------*/
 /*---------------------------------------------------------------------------------------------------------------*/
@@ -936,9 +1430,9 @@ function displayMenu() {
         case 3:
         $return .= '<ul>';
         $return .= '<li> <a href="admin_search_school.php"> Chercher une école </a> </li>';
-        $return .= '<li> <a href="admin_manage_account.php"> Gérer les comptes  </a> </li>';
-        $return .= '<li> <a href="admin_create_school.php"> Inscrire une école </a> </li>';
-        $return .= '<li> <a href="admin_create_manager.php"> Créer un compte manager </a> </li>';
+        $return .= '<li> <a href="admin_validate_account.php"> Gérer les utilisateurs  </a> </li>';
+        $return .= '<li> <a href="admin_validate_org.php"> Gérer les associations  </a> </li>';
+        $return .= '<li> <a href="admin_manage_school.php"> Gérer les écoles  </a> </li>';
         $return .= '</ul>';
         break;
     }
@@ -1002,6 +1496,34 @@ function backButton($location = '../index.php') {
     header('location: ' .$location);
 }
 
+//Fonction d'affichage du bouton de redirection vers la page de connexion
+function displayCreateSchoolButton() {
+    $return = '<form action="#" method="POST">';
+    $return .= '<input type="submit" name="redirect_create_school" value="Inscire une nouvelle école">';
+    $return .= '</form>';
+    return $return;
+}
+
+//Fonction de redirection vers la page de connexion
+function createSchoolButton() {
+    if(isset($_POST['redirect_create_school']))
+    header('location: admin_create_school.php');
+}
+
+//Fonction d'affichage du bouton de redirection vers la page de connexion
+function displayCreateManagerButton() {
+    $return = '<form action="#" method="POST">';
+    $return .= '<input type="submit" name="redirect_create_manager" value="Inscrire un nouveau manager">';
+    $return .= '</form>';
+    return $return;
+}
+
+//Fonction de redirection vers la page de connexion
+function createManagerButton() {
+    if(isset($_POST['redirect_create_manager']))
+    header('location: admin_create_manager.php');
+}
+
 /*----------------------------------------AUTORISATION D'ACCES AUX PAGES-----------------------------------------*/
 
 //Fonction de vérification qu'une session est ouverte
@@ -1062,92 +1584,4 @@ function stringVerify($string) {
 /*--------------------------------------------------------------------------------------------------------------*/
 /*--------------------------------------------------------------------------------------------------------------*/
 
-function logList() {
-    $connection = db_connection();
-    $query = 'SELECT * FROM users INNER JOIN schools ON schools.school_id = users.user_school_id WHERE user_role = 1 OR user_role = 2';
-    $result = $connection->query($query);
-    if($result->num_rows > 0){
-        $return = '<form action="#" method="POST">';
-        $return .= '<table>';
-        $return .= '<tr> <td colspan = 6> Gérer les logs </td> </tr>';
-        $return .= '<tr> <th> Prénom </th> <th> Nom </th> <th> Ecole </th> <th> Login </th> <th> Role </th> <th> Supprimer </th> </tr> ';
-        while($row = $result->fetch_assoc()) {
-            $return .= '<tr>';
-                $return .= '<td>' . $row['user_forename'] . '</td>';
-                $return .= '<td>' . $row['user_name'] . '</td>';
-                $return .= '<td>' . $row['user_login'] .'</td>';
-                if ($row['user_role'] == 1) {
-                    $return .= '<td> Utilisateur </td>';
-                } elseif ($row['user_role'] == 2) {
-                    $return .= '<td> Manager </td>';
-                }
-                $return .= '<td>' . $row['school_name'] .'</td>';
-                $return .= '<td> <input type="submit" value="Supprimer" name="delete'.$row['user_id'].'"> </td>';
-            $return .= '</tr>';
-        }
-        $return .= '</table>';
-
-        return $return;
-    } else {
-        return "Il n'y a plus aucun compte utilisateur ou manager";
-    }
-}
-
-function deleteLogin() {
-    $connection = db_connection();
-    $query = 'SELECT * FROM users INNER JOIN schools ON schools.school_id = users.user_school_id  WHERE user_role = 1 OR user_role = 2';
-    $result = $connection->query($query);
-    for ($i=0; $i < $result->num_rows; $i++) {
-        while($row = $result->fetch_assoc()){
-            if (isset($_POST['delete'.$row['user_id']])) {
-                $query = 'SELECT * FROM members INNER JOIN organizations ON members.member_organization_id = organizations.organization_id WHERE member_user_id ='.$row['user_id'];
-                $result1 = $connection->query($query);
-                if ($result1->num_rows > 0) {
-                    $row2 = $result1->fetch_assoc();
-                    $query = 'DELETE FROM members WHERE member_user_id='.$row['user_id'];
-                    $result2 = $connection->query($query);
-                    if ($result2 === TRUE) {
-                        $query = 'UPDATE organizations SET organization_nb_members = organization_nb_members-1 WHERE organization_id='.$row2['organization_school_id'];
-                        $result3 = $connection->query($query);
-                        if ($result3 === TRUE) {
-                            $query = 'DELETE FROM users WHERE user_id='.$row['user_id'];
-                            $result4 = $connection->query($query);
-                            if ($result4 === TRUE) {
-                                $query = 'UPDATE schools SET school_nb_students = school_nb_students-1 WHERE school_id='.$row['school_id'];
-                                $result5 = $connection->query($query);
-                                if ($result5 === TRUE) {
-                                    header('Refresh: 0');
-                                    exit();
-                                } else {
-                                    return "Problème survenu lors de la validation 5";
-                                }
-                            } else {
-                                return "Problème survenu lors de la validation 4";
-                            }
-                        } else {
-                            return "Problème survenu lors de la validation 3";
-                        }
-                    } else {
-                        return "Problème survenu lors de la validation 2";
-                    }
-                } else {
-                    $query = 'DELETE FROM users WHERE user_id='.$row['user_id'];
-                    $result4 = $connection->query($query);
-                    if ($result4 === TRUE) {
-                        $query = 'UPDATE schools SET school_nb_students = school_nb_students-1 WHERE school_id='.$row['school_id'];
-                        $result5 = $connection->query($query);
-                        if ($result5 === TRUE) {
-                            header('Refresh: 0');
-                            exit();
-                        } else {
-                            return "Problème survenu lors de la validation 7";
-                        }
-                    } else {
-                        return "Problème survenu lors de la validation 6";
-                    }
-                }
-            }
-        }
-    }
-}
 ?>

@@ -20,6 +20,8 @@ session_start();
 		if(accountIsConnected()) {
 			if(managerIsConnected()) {
 				echo displayMySchool();
+				echo orgList();
+				echo moreInformationOrg();
 			} else {
 				echo('Vous n\'êtes pas autorisé à accèder à cette page.');
 			}

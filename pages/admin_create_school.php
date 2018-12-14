@@ -33,7 +33,7 @@ session_start();
 			echo logButton();
 		}
 		echo displayBackButton();
-		echo backButton('admin_logged.php');
+		echo backButton('admin_manage_school.php');
 		?>
 	</section>
 </body>

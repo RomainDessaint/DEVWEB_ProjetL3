@@ -7,7 +7,7 @@ session_start();
 <html lang = "fr">
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-	<title> Administrateur - Accueil </title>
+	<title> Administrateur - Gérer les associations </title>
 </head>
 
 <body>
@@ -18,12 +18,10 @@ session_start();
 	</header>
 
 	<section>
-		<h1> Administrateur - Accueil </h1>
+		<h1> Administrateur - Gérer les associations </h1>
 		<?php
 		if(accountIsConnected()) {
 			if(adminIsConnected()) {
-				echo logList();
-                echo deleteLogin();
 			} else {
 				echo('Vous n\'êtes pas autorisé à accèder à cette page.');
 			}
@@ -33,7 +31,7 @@ session_start();
 			echo logButton();
 		}
 		echo displayBackButton();
-		echo backButton();
+		echo backButton('admin_logged.php');
 		?>
 	</section>
 </body>

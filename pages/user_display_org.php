@@ -1,13 +1,14 @@
 <?php
 include('../includes/functions.inc.php');
 session_start();
+$org_name = getOrgName();
 ?>
 
 <!DOCTYPE html>
 <html lang = "fr">
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-	<title> Utilisateur - Mon école </title>
+	<title> Utilisateur - <?php echo $org_name ?> </title>
 </head>
 
 <body>
@@ -18,12 +19,11 @@ session_start();
 	</header>
 
 	<section>
-		<h1> Utilisateur - Mon école </h1>
+		<h1> Utilisateur - <?php echo $org_name ?> </h1>
 		<?php
 		if(accountIsConnected()) {
-			if(managerIsConnected()) {
-				echo awaitingValidationMembers();
-				echo validatingMembers();
+			if(userIsConnected()) {
+				echo displayOrg();
 			} else {
 				echo('Vous n\'êtes pas autorisé à accèder à cette page.');
 			}
@@ -33,7 +33,7 @@ session_start();
 			echo logButton();
 		}
 		echo displayBackButton();
-		echo backButton('user_logged.php');
+		echo backButton('user_display_school.php');
 		?>
 	</section>
 </body>

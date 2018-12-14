@@ -24,6 +24,8 @@ $school_name = getSchoolName();
 		if(accountIsConnected()) {
 			if(managerIsConnected()) {
 				echo displaySchool();
+				echo orgList();
+				echo moreInformationOrg();
 			} else {
 				echo('Vous n\'êtes pas autorisé à accèder à cette page.');
 			}

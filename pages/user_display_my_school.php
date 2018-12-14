@@ -26,6 +26,8 @@ session_start();
 				echo displayChangeSchoolButton();
 				echo changeSchoolForm();
 				echo changeSchool();
+				echo orgList();
+				echo moreInformationOrg();
 			} else {
 				echo('Vous n\'êtes pas autorisé à accèder à cette page.');
 			}
